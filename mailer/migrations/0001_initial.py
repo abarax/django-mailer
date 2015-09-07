@@ -1,55 +1,78 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from south.utils import datetime_utils as datetime
+from south.db import db
+from south.v2 import SchemaMigration
+from django.db import models
 
-from django.db import models, migrations
-import django.utils.timezone
+
+class Migration(SchemaMigration):
+
+    def forwards(self, orm):
+        # Adding model 'Message'
+        db.create_table('mailer_message', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('message_data', self.gf('django.db.models.fields.TextField')()),
+            ('when_added', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
+            ('priority', self.gf('django.db.models.fields.CharField')(default=u'2', max_length=1)),
+        ))
+        db.send_create_signal('mailer', ['Message'])
+
+        # Adding model 'DontSendEntry'
+        db.create_table('mailer_dontsendentry', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('to_address', self.gf('django.db.models.fields.EmailField')(max_length=75)),
+            ('when_added', self.gf('django.db.models.fields.DateTimeField')()),
+        ))
+        db.send_create_signal('mailer', ['DontSendEntry'])
+
+        # Adding model 'MessageLog'
+        db.create_table('mailer_messagelog', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('message_data', self.gf('django.db.models.fields.TextField')()),
+            ('when_added', self.gf('django.db.models.fields.DateTimeField')(db_index=True)),
+            ('priority', self.gf('django.db.models.fields.CharField')(max_length=1, db_index=True)),
+            ('when_attempted', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
+            ('result', self.gf('django.db.models.fields.CharField')(max_length=1)),
+            ('log_message', self.gf('django.db.models.fields.TextField')()),
+        ))
+        db.send_create_signal('mailer', ['MessageLog'])
 
 
-class Migration(migrations.Migration):
+    def backwards(self, orm):
+        # Deleting model 'Message'
+        db.delete_table('mailer_message')
 
-    dependencies = [
-    ]
+        # Deleting model 'DontSendEntry'
+        db.delete_table('mailer_dontsendentry')
 
-    operations = [
-        migrations.CreateModel(
-            name='DontSendEntry',
-            fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('to_address', models.EmailField(max_length=254)),
-                ('when_added', models.DateTimeField()),
-            ],
-            options={
-                'verbose_name': "don't send entry",
-                'verbose_name_plural': "don't send entries",
-            },
-        ),
-        migrations.CreateModel(
-            name='Message',
-            fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('message_data', models.TextField()),
-                ('when_added', models.DateTimeField(default=django.utils.timezone.now)),
-                ('priority', models.CharField(default='2', max_length=1, choices=[('1', 'high'), ('2', 'medium'), ('3', 'low'), ('4', 'deferred')])),
-            ],
-            options={
-                'verbose_name': 'message',
-                'verbose_name_plural': 'messages',
-            },
-        ),
-        migrations.CreateModel(
-            name='MessageLog',
-            fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('message_data', models.TextField()),
-                ('when_added', models.DateTimeField(db_index=True)),
-                ('priority', models.CharField(db_index=True, max_length=1, choices=[('1', 'high'), ('2', 'medium'), ('3', 'low'), ('4', 'deferred')])),
-                ('when_attempted', models.DateTimeField(default=django.utils.timezone.now)),
-                ('result', models.CharField(max_length=1, choices=[('1', 'success'), ('2', "don't send"), ('3', 'failure')])),
-                ('log_message', models.TextField()),
-            ],
-            options={
-                'verbose_name': 'message log',
-                'verbose_name_plural': 'message logs',
-            },
-        ),
-    ]
+        # Deleting model 'MessageLog'
+        db.delete_table('mailer_messagelog')
+
+
+    models = {
+        'mailer.dontsendentry': {
+            'Meta': {'object_name': 'DontSendEntry'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'to_address': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
+            'when_added': ('django.db.models.fields.DateTimeField', [], {})
+        },
+        'mailer.message': {
+            'Meta': {'object_name': 'Message'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'message_data': ('django.db.models.fields.TextField', [], {}),
+            'priority': ('django.db.models.fields.CharField', [], {'default': "u'2'", 'max_length': '1'}),
+            'when_added': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'})
+        },
+        'mailer.messagelog': {
+            'Meta': {'object_name': 'MessageLog'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'log_message': ('django.db.models.fields.TextField', [], {}),
+            'message_data': ('django.db.models.fields.TextField', [], {}),
+            'priority': ('django.db.models.fields.CharField', [], {'max_length': '1', 'db_index': 'True'}),
+            'result': ('django.db.models.fields.CharField', [], {'max_length': '1'}),
+            'when_added': ('django.db.models.fields.DateTimeField', [], {'db_index': 'True'}),
+            'when_attempted': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'})
+        }
+    }
+
+    complete_apps = ['mailer']
